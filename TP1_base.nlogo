@@ -26,7 +26,7 @@ to setup-agents
   [
     set shape "mouse side"
     set color 4
-    set size 3
+    set size 100
     setxy random-pxcor random-pycor
   ]
 
