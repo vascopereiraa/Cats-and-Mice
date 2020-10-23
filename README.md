@@ -11,13 +11,13 @@ To download Netlogo use the following [link](https://ccl.northwestern.edu/netlog
 
 ## TODO
 ### Racional Behavior
-##### Mice
+#### Mice
 - [ ] If perceive a cat in 8 neighbors => Run away 2 patches
 - [ ] If a lonely mouse perceive other lonely => Do nothing!
 - [ ] If a lonely mouse perceive a litter/friendly => ATACK!
 - [ ] If a friendly mouse perceive a litter => Join them!
 
-##### Cats
+#### Cats
 - [ ] If a mouse is 2 patches in front of them, he could run to them => kill any mice
 
 ### Generalization of the model
