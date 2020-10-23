@@ -8,18 +8,31 @@ to setup
     Modelo = "Original" [
     setup-patches-original
     setup-agents-original
-  ])
+    ]
+    Modelo = "Comportamento Racional" [  ; Same startup as "Original"
+      setup-patches-original
+      setup-agents-original
+    ]
+  )
   reset-ticks
 end
 
 to go
-  move-mice-original
-  move-cats-original
-  lunch-time-original
+  (ifelse
+    Modelo = "Original" [
+      move-mice-original
+      move-cats-original
+      lunch-time-original
+    ]
+    Modelo = "Comportamento Racional" [
+
+    ]
+  )
   tick
   if count mice = 0 [stop]
 end
 
+;; Original Behavior Code
 to setup-patches-original
   ask patches[
     let x 28
@@ -206,11 +219,11 @@ count cats
 CHOOSER
 72
 588
-210
+277
 633
 Modelo
 Modelo
-"Original"
+"Original" "Comportamento Racional"
 0
 
 @#$#@#$#@
