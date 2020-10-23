@@ -6,7 +6,7 @@ In the second phase of the project, we increased the level of understanding of t
 This project was developed within the scope of the course IIntrodução à Inteligência Artificial @ Instituto Superior de Engenharia de Coimbra.
 
 ## Usage
-In order to run this project you must use Netlogo 6.1.1
+In order to run this project you must use Netlogo 6.1.1<br>
 To download Netlogo use the following [link](https://ccl.northwestern.edu/netlogo/)
 
 ## TODO
