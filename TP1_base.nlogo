@@ -4,12 +4,23 @@ globals [a b c d w z]
 
 to setup
   ca
-  setup-patches
-  setup-agents
+  (ifelse
+    Modelo = "Original" [
+    setup-patches-original
+    setup-agents-original
+  ])
   reset-ticks
 end
 
-to setup-patches
+to go
+  move-mice-original
+  move-cats-original
+  lunch-time-original
+  tick
+  if count mice = 0 [stop]
+end
+
+to setup-patches-original
   ask patches[
     let x 28
     let y 48
@@ -21,7 +32,7 @@ to setup-patches
   ]
 end
 
-to setup-agents
+to setup-agents-original
   create-mice N-mice
   [
     set shape "mouse side"
@@ -39,24 +50,14 @@ to setup-agents
   ]
 end
 
-to go
-  move-mice
-  move-cats
-  lunch-time
-  tick
-  if count mice = 0 [stop]
-end
-
-
-
-to move-mice
+to move-mice-original
   ask mice[
     let x one-of neighbors
     move-to x
   ]
 end
 
-to move-cats
+to move-cats-original
   ask cats[
     if patch-ahead 1 != nobody [set a patch-ahead 1]
     if patch-ahead 2 != nobody [set b patch-ahead 2]
@@ -72,7 +73,7 @@ to move-cats
   ]
 end
 
-to lunch-time
+to lunch-time-original
   ask mice[
     if any? cats-on neighbors [die]
   ]
@@ -114,7 +115,7 @@ N-mice
 N-mice
 0
 20
-20.0
+10.0
 1
 1
 NIL
@@ -129,7 +130,7 @@ N-cats
 N-cats
 0
 10
-10.0
+5.0
 1
 1
 NIL
@@ -201,6 +202,16 @@ count cats
 17
 1
 11
+
+CHOOSER
+72
+588
+210
+633
+Modelo
+Modelo
+"Original"
+0
 
 @#$#@#$#@
 ## WHAT IS IT?
