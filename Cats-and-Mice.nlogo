@@ -33,7 +33,10 @@ to go
     ]
   )
   tick
-  if count mice = 0 [stop]
+  if count mice = 0 [
+    export-data
+    stop
+  ]
 end
 
 ;; RATIONAL BEHAVIOR
@@ -110,6 +113,27 @@ to lunch-time-original
     if any? cats-on neighbors [die]
   ]
 end
+
+;; EXPORT DATA
+to pt [string] ; Means Print
+  file-type string
+end
+
+to ptln [string] ; Means PrintLine
+  file-print string
+end
+
+to export-data
+  let filename "dataTest.txt"
+  file-open filename
+  ptln "Settings: "
+  pt "SmartCats? " ptln smartCats?
+  pt "N-Mice: " pt N-Mice pt "\tN-Cats: " ptln N-Cats
+  pt "Ticks: " ptln ticks
+  pt "\n"
+  file-close
+end
+
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -147,7 +171,7 @@ N-mice
 N-mice
 0
 20
-11.0
+10.0
 1
 1
 NIL
