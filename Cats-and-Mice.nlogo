@@ -13,12 +13,16 @@ to setup
     Modelo = "Comportamento Racional" [  ; Same startup as "Original"
       setup-patches-original
       setup-agents-original
+      set-label
     ]
   )
   reset-ticks
 end
 
 to go
+  ; Check execution end
+  if ticks >= maxTick? [ stop ]
+
   (ifelse
     Modelo = "Original" [
       move-mice-original
@@ -26,11 +30,10 @@ to go
       lunch-time-original
     ]
     Modelo = "Comportamento Racional" [
-      move-mice-racional
       move-cats-original
-      ifelse smartCats?
-      [ lunch-time-rational ]
-      [ lunch-time-original]
+      move-mice-racional
+      lunch-time-rational
+      set-label
     ]
   )
   tick
@@ -41,6 +44,17 @@ to go
 end
 
 ;; RATIONAL BEHAVIOR
+to set-label
+  ask mice [
+    ifelse mouseLabel?
+    [
+      set label tipo
+      set label-color black
+    ]
+    [ set label ""  ]
+  ]
+end
+
 to lunch-time-rational
   ask cats [
     (ifelse
@@ -52,6 +66,70 @@ to lunch-time-rational
         ask one-of mice-on patch-ahead 1 [die]
       ]
     )
+  ]
+end
+
+to move-mice-racional
+  ask mice [
+    ifelse any? cats-on neighbors [
+      ; Cat on 3 front neighbors => Move back 2
+      ifelse (is-patch? patch-left-and-ahead 45 1 AND any? cats-on patch-left-and-ahead 45 1) OR (is-patch? patch-ahead 1 AND any? cats-on patch-ahead 1) OR (is-patch? patch-right-and-ahead 45 1 AND any? cats-on patch-right-and-ahead 45 1)
+      [
+        ifelse is-patch? patch-ahead (-2)
+        [fd (-2)]
+        [move-to one-of neighbors with [not any? cats]]
+      ]
+      [
+        ; Cat on 3 back neighbors => Move forward 2
+        ifelse (is-patch? patch-left-and-ahead 135 1 AND any? cats-on patch-left-and-ahead 135 1) OR (is-patch? patch-ahead (-1) AND any? cats-on patch-ahead (-1)) OR (is-patch? patch-right-and-ahead 135 1 AND any? cats-on patch-right-and-ahead 135 1)
+        [
+          ifelse is-patch? patch-ahead 2
+          [fd 2]
+          [move-to one-of neighbors with [not any? cats-here]]
+        ]
+        [
+          ; Cat on left => Move to Right 2
+          ifelse is-patch? patch-left-and-ahead 90 1 AND any? cats-on patch-left-and-ahead 90 1
+          [
+            ifelse is-patch? patch-right-and-ahead 90 2
+            [move-to patch-right-and-ahead 90 2]
+            [move-to one-of neighbors with [not any? cats-here]]
+          ]
+          [
+            ; Cat on right => Move to Left 2
+            if is-patch? patch-right-and-ahead 90 1 AND any? cats-on patch-right-and-ahead 90 1
+            [
+              ifelse is-patch? patch-right-and-ahead 90 2
+              [move-to patch-left-and-ahead 90 2]
+              [move-to one-of neighbors with [not any? cats-here]]
+            ]
+          ]
+        ]
+      ]
+    ]
+    [
+      ; If any cats on neighbors, check for mice
+      ifelse any? mice-on neighbors
+      [
+        let vizinho one-of mice-on neighbors
+        ifelse tipo = "loner" and [tipo] of vizinho = "loner"
+        [
+          move-to one-of neighbors
+        ]
+        [
+          ifelse tipo = "loner" and [tipo] of vizinho = "friendly"
+          [
+            ask one-of mice-on neighbors [die]
+          ]
+          [
+            die
+          ]
+        ]
+      ]
+      [
+        move-to one-of neighbors
+      ]
+    ]
   ]
 end
 
@@ -74,7 +152,7 @@ to setup-agents-original
     set shape "mouse side"
     set color 4
     setxy random-pxcor random-pycor
-    set tipo one-of ["friendly" "loner" "litter"]
+    set tipo one-of ["friendly" "loner"]
   ]
 
   create-cats N-cats
@@ -116,41 +194,6 @@ to lunch-time-original
   ]
 end
 
-to move-mice-racional
-
-  ask mice [
-   ; se houver gatos nas células vizinhas, fugir duas células
-    if any? cats-on neighbors [
-
-        ;para a frente
-        ifelse (is-patch? patch-left-and-ahead 45 1 AND any? cats-on patch-left-and-ahead 45 1) OR (is-patch? patch-ahead 1 AND any? cats-on patch-ahead 1) OR (is-patch? patch-right-and-ahead 45 1 AND any? cats-on patch-right-and-ahead 45 1)
-        [ifelse is-patch? patch-ahead (-2) [fd (-2)] [move-to one-of neighbors with [not any? cats-here]]
-        ;para trás
-        [ifelse (is-patch? patch-left-and-ahead 135 1 AND any? cats-on patch-left-and-ahead 135 1) OR (is-patch? patch-ahead (-1) AND any? cats-on patch-ahead (-1)) OR (is-patch? patch-right-and-ahead 135 1 AND any? cats-on patch-right-and-ahead 135 1)
-        [ifelse is-patch? patch-ahead 2 [fd 2] [move-to one-of neighbors with [not any? cats-here]]
-        ;para a esquerda
-        [ifelse is-patch? patch-left-and-ahead 90 1 AND any? cats-on patch-left-and-ahead 90 1
-        [ifelse is-patch? patch-right-and-ahead 90 2 [move-to patch-right-and-ahead 90 2] [move-to one-of neighbors with [not any? cats-here]]]
-        ;para a direita
-        [ifelse is-patch? patch-right-and-ahead 90 1 AND any? cats-on patch-right-and-ahead 90 1
-        [ifelse is-patch? patch-right-and-ahead 90 2 [move-to patch-right-and-ahead 90 2] [move-to one-of neighbors with [not any? cats-here]]]
-        ;se não houver gatos, mas sim ratos nas redondezas
-        [ifelse any? mice-on neighbors
-        let vizinho mice-on neighbors
-        ;se um "loner" ve um "litter", ataca
-        [ifelse tipo = "loner" and [tipo] one-of vizinho = "litter"[ask vizinho [tipo] = "litter" [die]]
-        ;se um "loner" ve um "friedly", ataca
-          [ifelse tipo = "loner" and [tipo] one-of vizinho = "friendly"[ask vizinho [tipo] = "friendly"[die]]
-        ;se um "friendly" ve um "litter" junta-se a ele
-          [ifelse tipo = "friendly" and [tipo] one-of vizinho = "litter"[ask vizinho [tipo] = "litter" [create-link-with vizinho tipo = "litter"]]]
-          [move-to one-of neighbors with [not any? mice-here]]]]]
-
-        ;nao ha vizinhos
-        [move-to one-of neighbors]]]]]]
-        ]
-   ]
-end
-
 ;; EXPORT DATA
 to pt [string] ; Means Print
   file-type string
@@ -163,14 +206,12 @@ end
 to export-data
   let filename "dataTest.txt"
   file-open filename
-  ptln "Settings: "
-  pt "SmartCats? " ptln smartCats?
+  pt "Settings: " ptln Modelo
   pt "N-Mice: " pt N-Mice pt "\tN-Cats: " ptln N-Cats
-  pt "Ticks: " ptln ticks
+  pt "Max-Ticks: " pt maxTick? pt "\tTicks: " pt ticks pt "\tExceeds: " ptln ticks > maxTick?
   pt "\n"
   file-close
 end
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -181,7 +222,7 @@ GRAPHICS-WINDOW
 -1
 13.0
 1
-10
+14
 1
 1
 1
@@ -307,16 +348,30 @@ Modelo
 1
 
 SWITCH
-329
-594
-455
-627
-SmartCats?
-SmartCats?
-0
+338
+585
+492
+618
+mouseLabel?
+mouseLabel?
+1
 1
 -1000
 
+SLIDER
+113
+490
+285
+523
+maxTick?
+maxTick?
+0
+1500
+500.0
+10
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
