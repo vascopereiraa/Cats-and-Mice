@@ -7,8 +7,8 @@ to setup
   ca
   (ifelse
     Modelo = "Original" [
-    setup-patches-original
-    setup-agents-original
+      setup-patches-original
+      setup-agents-original
     ]
     Modelo = "Comportamento Racional" [  ; Same startup as "Original"
       setup-patches-original
@@ -27,11 +27,32 @@ to go
     ]
     Modelo = "Comportamento Racional" [
       move-mice-racional
-
+      move-cats-original
+      ifelse smartCats?
+      [ lunch-time-rational ]
+      [ lunch-time-original]
     ]
   )
   tick
-  if count mice = 0 [stop]
+  if count mice = 0 [
+    export-data
+    stop
+  ]
+end
+
+;; RATIONAL BEHAVIOR
+to lunch-time-rational
+  ask cats [
+    (ifelse
+      any? mice-on neighbors[
+      ask one-of mice-on neighbors [die]
+    ]
+      any? mice-on patch-ahead 2 [
+        fd 1
+        ask one-of mice-on patch-ahead 1 [die]
+      ]
+    )
+  ]
 end
 
 ;; Original Behavior Code
@@ -129,6 +150,27 @@ to move-mice-racional
         ]
    ]
 end
+
+;; EXPORT DATA
+to pt [string] ; Means Print
+  file-type string
+end
+
+to ptln [string] ; Means PrintLine
+  file-print string
+end
+
+to export-data
+  let filename "dataTest.txt"
+  file-open filename
+  ptln "Settings: "
+  pt "SmartCats? " ptln smartCats?
+  pt "N-Mice: " pt N-Mice pt "\tN-Cats: " ptln N-Cats
+  pt "Ticks: " ptln ticks
+  pt "\n"
+  file-close
+end
+
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -263,6 +305,18 @@ Modelo
 Modelo
 "Original" "Comportamento Racional"
 1
+
+SWITCH
+329
+594
+455
+627
+SmartCats?
+SmartCats?
+0
+1
+-1000
+
 
 @#$#@#$#@
 ## WHAT IS IT?
