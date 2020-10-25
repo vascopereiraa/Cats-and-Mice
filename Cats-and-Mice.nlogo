@@ -1,6 +1,7 @@
 breed[cats cat]
 breed[mice mouse]
 globals [a b c d w z]
+mice-own [tipo]
 
 to setup
   ca
@@ -25,6 +26,7 @@ to go
       lunch-time-original
     ]
     Modelo = "Comportamento Racional" [
+      move-mice-racional
 
     ]
   )
@@ -51,6 +53,7 @@ to setup-agents-original
     set shape "mouse side"
     set color 4
     setxy random-pxcor random-pycor
+    set tipo one-of ["friendly" "loner" "litter"]
   ]
 
   create-cats N-cats
@@ -90,6 +93,41 @@ to lunch-time-original
   ask mice[
     if any? cats-on neighbors [die]
   ]
+end
+
+to move-mice-racional
+
+  ask mice [
+   ; se houver gatos nas células vizinhas, fugir duas células
+    if any? cats-on neighbors [
+
+        ;para a frente
+        ifelse (is-patch? patch-left-and-ahead 45 1 AND any? cats-on patch-left-and-ahead 45 1) OR (is-patch? patch-ahead 1 AND any? cats-on patch-ahead 1) OR (is-patch? patch-right-and-ahead 45 1 AND any? cats-on patch-right-and-ahead 45 1)
+        [ifelse is-patch? patch-ahead (-2) [fd (-2)] [move-to one-of neighbors with [not any? cats-here]]
+        ;para trás
+        [ifelse (is-patch? patch-left-and-ahead 135 1 AND any? cats-on patch-left-and-ahead 135 1) OR (is-patch? patch-ahead (-1) AND any? cats-on patch-ahead (-1)) OR (is-patch? patch-right-and-ahead 135 1 AND any? cats-on patch-right-and-ahead 135 1)
+        [ifelse is-patch? patch-ahead 2 [fd 2] [move-to one-of neighbors with [not any? cats-here]]
+        ;para a esquerda
+        [ifelse is-patch? patch-left-and-ahead 90 1 AND any? cats-on patch-left-and-ahead 90 1
+        [ifelse is-patch? patch-right-and-ahead 90 2 [move-to patch-right-and-ahead 90 2] [move-to one-of neighbors with [not any? cats-here]]]
+        ;para a direita
+        [ifelse is-patch? patch-right-and-ahead 90 1 AND any? cats-on patch-right-and-ahead 90 1
+        [ifelse is-patch? patch-right-and-ahead 90 2 [move-to patch-right-and-ahead 90 2] [move-to one-of neighbors with [not any? cats-here]]]
+        ;se não houver gatos, mas sim ratos nas redondezas
+        [ifelse any? mice-on neighbors
+        let vizinho mice-on neighbors
+        ;se um "loner" ve um "litter", ataca
+        [ifelse tipo = "loner" and [tipo] one-of vizinho = "litter"[ask vizinho [tipo] = "litter" [die]]
+        ;se um "loner" ve um "friedly", ataca
+          [ifelse tipo = "loner" and [tipo] one-of vizinho = "friendly"[ask vizinho [tipo] = "friendly"[die]]
+        ;se um "friendly" ve um "litter" junta-se a ele
+          [ifelse tipo = "friendly" and [tipo] one-of vizinho = "litter"[ask vizinho [tipo] = "litter" [create-link-with vizinho tipo = "litter"]]]
+          [move-to one-of neighbors with [not any? mice-here]]]]]
+
+        ;nao ha vizinhos
+        [move-to one-of neighbors]]]]]]
+        ]
+   ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -224,7 +262,7 @@ CHOOSER
 Modelo
 Modelo
 "Original" "Comportamento Racional"
-0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
