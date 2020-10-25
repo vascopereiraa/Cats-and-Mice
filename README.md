@@ -18,7 +18,7 @@ To download Netlogo use the following [link](https://ccl.northwestern.edu/netlog
 - [ ] If a friendly mouse perceive a litter => Join them!
 
 #### Cats
-- [ ] If a mouse is 2 patches in front of them, he could run to them => kill any mice
+- [x] If a mouse is 2 patches in front of them, he could run to them => kill any mice
 
 ### Generalization of the model
 - [ ] Poisoned Food
