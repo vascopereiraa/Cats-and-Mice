@@ -21,7 +21,7 @@ end
 
 to go
   ; Check execution end
-  if ticks >= maxTick? [ stop ]
+  if ticks >= maxTick? [ export-data stop ]
 
   (ifelse
     Modelo = "Original" [
@@ -206,9 +206,13 @@ end
 to export-data
   let filename "dataTest.txt"
   file-open filename
+  let endtime ticks = maxTick?
   pt "Settings: " ptln Modelo
   pt "N-Mice: " pt N-Mice pt "\tN-Cats: " ptln N-Cats
-  pt "Max-Ticks: " pt maxTick? pt "\tTicks: " pt ticks pt "\tExceeds: " ptln ticks > maxTick?
+  pt "Max-Ticks: " pt maxTick? pt "\tTicks: " pt ticks pt "\tExceeds: " ptln ticks = maxTick?
+  if endtime [
+    pt "Mice: " pt count mice pt "\tCats: " ptln count cats
+  ]
   pt "\n"
   file-close
 end
@@ -249,7 +253,7 @@ N-mice
 N-mice
 0
 20
-10.0
+20.0
 1
 1
 NIL
@@ -354,7 +358,7 @@ SWITCH
 618
 mouseLabel?
 mouseLabel?
-1
+0
 1
 -1000
 
@@ -367,7 +371,7 @@ maxTick?
 maxTick?
 0
 1500
-500.0
+1500.0
 10
 1
 NIL
