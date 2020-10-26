@@ -1,23 +1,28 @@
 breed[cats cat]
 breed[mice mouse]
 globals [a b c d w z]
+mice-own [tipo]
 
 to setup
   ca
   (ifelse
     Modelo = "Original" [
-    setup-patches-original
-    setup-agents-original
+      setup-patches-original
+      setup-agents-original
     ]
     Modelo = "Comportamento Racional" [  ; Same startup as "Original"
       setup-patches-original
       setup-agents-original
+      set-label
     ]
   )
   reset-ticks
 end
 
 to go
+  ; Check execution end
+  if ticks >= maxTick? [ export-data stop ]
+
   (ifelse
     Modelo = "Original" [
       move-mice-original
@@ -25,11 +30,107 @@ to go
       lunch-time-original
     ]
     Modelo = "Comportamento Racional" [
-
+      move-cats-original
+      move-mice-racional
+      lunch-time-rational
+      set-label
     ]
   )
   tick
-  if count mice = 0 [stop]
+  if count mice = 0 [
+    export-data
+    stop
+  ]
+end
+
+;; RATIONAL BEHAVIOR
+to set-label
+  ask mice [
+    ifelse mouseLabel?
+    [
+      set label tipo
+      set label-color black
+    ]
+    [ set label ""  ]
+  ]
+end
+
+to lunch-time-rational
+  ask cats [
+    (ifelse
+      any? mice-on neighbors[
+      ask one-of mice-on neighbors [die]
+    ]
+      any? mice-on patch-ahead 2 [
+        fd 1
+        ask one-of mice-on patch-ahead 1 [die]
+      ]
+    )
+  ]
+end
+
+to move-mice-racional
+  ask mice [
+    ifelse any? cats-on neighbors [
+      ; Cat on 3 front neighbors => Move back 2
+      ifelse (is-patch? patch-left-and-ahead 45 1 AND any? cats-on patch-left-and-ahead 45 1) OR (is-patch? patch-ahead 1 AND any? cats-on patch-ahead 1) OR (is-patch? patch-right-and-ahead 45 1 AND any? cats-on patch-right-and-ahead 45 1)
+      [
+        ifelse is-patch? patch-ahead (-2)
+        [fd (-2)]
+        [move-to one-of neighbors with [not any? cats]]
+      ]
+      [
+        ; Cat on 3 back neighbors => Move forward 2
+        ifelse (is-patch? patch-left-and-ahead 135 1 AND any? cats-on patch-left-and-ahead 135 1) OR (is-patch? patch-ahead (-1) AND any? cats-on patch-ahead (-1)) OR (is-patch? patch-right-and-ahead 135 1 AND any? cats-on patch-right-and-ahead 135 1)
+        [
+          ifelse is-patch? patch-ahead 2
+          [fd 2]
+          [move-to one-of neighbors with [not any? cats-here]]
+        ]
+        [
+          ; Cat on left => Move to Right 2
+          ifelse is-patch? patch-left-and-ahead 90 1 AND any? cats-on patch-left-and-ahead 90 1
+          [
+            ifelse is-patch? patch-right-and-ahead 90 2
+            [move-to patch-right-and-ahead 90 2]
+            [move-to one-of neighbors with [not any? cats-here]]
+          ]
+          [
+            ; Cat on right => Move to Left 2
+            if is-patch? patch-right-and-ahead 90 1 AND any? cats-on patch-right-and-ahead 90 1
+            [
+              ifelse is-patch? patch-right-and-ahead 90 2
+              [move-to patch-left-and-ahead 90 2]
+              [move-to one-of neighbors with [not any? cats-here]]
+            ]
+          ]
+        ]
+      ]
+    ]
+    [
+      ; If any cats on neighbors, check for mice
+      ifelse any? mice-on neighbors
+      [
+        let vizinho one-of mice-on neighbors
+        ifelse tipo = "loner" and [tipo] of vizinho = "loner"
+        [
+          move-to one-of neighbors
+        ]
+        [
+          ifelse tipo = "loner" and [tipo] of vizinho = "friendly"
+          [
+            ask one-of mice-on neighbors [die]
+          ]
+          [
+            die
+          ]
+        ]
+      ]
+      [
+        move-to one-of neighbors
+      ]
+    ]
+  ]
 end
 
 ;; Original Behavior Code
@@ -51,6 +152,7 @@ to setup-agents-original
     set shape "mouse side"
     set color 4
     setxy random-pxcor random-pycor
+    set tipo one-of ["friendly" "loner"]
   ]
 
   create-cats N-cats
@@ -91,6 +193,29 @@ to lunch-time-original
     if any? cats-on neighbors [die]
   ]
 end
+
+;; EXPORT DATA
+to pt [string] ; Means Print
+  file-type string
+end
+
+to ptln [string] ; Means PrintLine
+  file-print string
+end
+
+to export-data
+  let filename "dataTest.txt"
+  file-open filename
+  let endtime ticks = maxTick?
+  pt "Settings: " ptln Modelo
+  pt "N-Mice: " pt N-Mice pt "\tN-Cats: " ptln N-Cats
+  pt "Max-Ticks: " pt maxTick? pt "\tTicks: " pt ticks pt "\tExceeds: " ptln ticks = maxTick?
+  if endtime [
+    pt "Mice: " pt count mice pt "\tCats: " ptln count cats
+  ]
+  pt "\n"
+  file-close
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -101,7 +226,7 @@ GRAPHICS-WINDOW
 -1
 13.0
 1
-10
+14
 1
 1
 1
@@ -128,7 +253,7 @@ N-mice
 N-mice
 0
 20
-10.0
+20.0
 1
 1
 NIL
@@ -224,7 +349,33 @@ CHOOSER
 Modelo
 Modelo
 "Original" "Comportamento Racional"
+1
+
+SWITCH
+338
+585
+492
+618
+mouseLabel?
+mouseLabel?
 0
+1
+-1000
+
+SLIDER
+113
+490
+285
+523
+maxTick?
+maxTick?
+0
+1500
+1500.0
+10
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
