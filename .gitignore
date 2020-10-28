@@ -1,3 +1,4 @@
 .DS_Store
-dataTest.txt
 .Cats-and-Mice.tmp.nlogo
+./Datasheets
+./Datasheets/dataTest.txt

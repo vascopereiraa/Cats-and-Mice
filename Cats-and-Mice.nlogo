@@ -2,6 +2,7 @@ breed[cats cat]
 breed[mice mouse]
 globals [a b c d w z]
 mice-own [tipo]
+turtles-own [energy]
 
 to setup
   ca
@@ -13,6 +14,13 @@ to setup
     Modelo = "Comportamento Racional" [  ; Same startup as "Original"
       setup-patches-original
       setup-agents-original
+    ]
+    Modelo = "Generalizacao do Comportamento Racional" [
+      setup-patches-original
+      setup-agents-original
+      set-color-mice
+      setup-food
+      setup-energy
       set-label
     ]
   )
@@ -31,9 +39,19 @@ to go
     ]
     Modelo = "Comportamento Racional" [
       move-cats-original
+      ifelse smartMice?
+      [ move-mice-racional ]
+      [ move-mice-original ]
+      ifelse smartCats?
+      [ lunch-time-rational ]
+      [ lunch-time-original ]
+    ]
+    Modelo = "Generalizacao do Comportamento Racional" [
+      move-cats-original
       move-mice-racional
-      lunch-time-rational
+      lunch-time-advanced
       set-label
+      energy-check
     ]
   )
   tick
@@ -43,13 +61,105 @@ to go
   ]
 end
 
+;; ADVANCED RACIONAL BEHAVIOR
+to set-color-mice
+  ask mice [
+    ifelse tipo = "loner" [
+      set color brown
+    ]
+    [
+      set color gray
+    ]
+  ]
+end
+
+to setup-energy
+  ask turtles [
+    set energy startEnergy?
+  ]
+end
+
+to energy-check
+  ask turtles [
+    if energy <= 0 [die]
+  ]
+end
+
+to color-default
+  ask patch-here [
+    let x 28
+    let y 48
+    if pycor mod 2 = 0
+    [set x 48 set y 28]
+    ifelse pxcor mod 2 = 0
+    [set pcolor x]
+    [set pcolor y]
+  ]
+end
+
+to lunch-time-advanced
+  ask cats [
+    (ifelse
+      any? mice-on neighbors[
+        let miceEnergy 0
+        ask one-of mice-on neighbors [ set miceEnergy energy die]
+        set energy energy + round(miceEnergy / 2)
+      ]
+      any? mice-on patch-ahead 2 [
+        fd 1
+        let miceEnergy 0
+        ask one-of mice-on patch-ahead 1 [ set miceEnergy energy die]
+        set energy energy + round(miceEnergy / 2)
+      ]
+      any? neighbors with [pcolor = white] [
+        move-to one-of neighbors with [pcolor = white]
+        set energy energy + 10
+        color-default ; Return to default color
+      ]
+      any? neighbors with [pcolor = green] [
+        move-to one-of neighbors with [pcolor = green]
+        set energy energy - 25
+        color-default ; Return to default color
+    ])
+  ]
+
+  ask mice [
+    (ifelse
+      any? neighbors with [pcolor = yellow] [
+        move-to one-of neighbors with [pcolor = yellow]
+        set energy energy + 10
+        color-default ; Return to default color
+      ]
+      any? neighbors with [pcolor = green] [
+        move-to one-of neighbors with [pcolor = green]
+        set energy energy - 25
+        color-default ; Return to default color
+    ])
+  ]
+end
+
+to setup-food
+  let food 0
+  while [food != maxFood?] [
+    ask one-of patches with [not any? turtles-here and pcolor != yellow and pcolor != green and pcolor != white] [
+      ifelse random 101 < 50
+      [ set pcolor yellow ]
+      [ set pcolor white ]
+      if poisonedFood? [
+        if random 101 < 20 [ set pcolor green ]
+      ]
+    ]
+    set food food + 1
+  ]
+end
+
 ;; RATIONAL BEHAVIOR
 to set-label
-  ask mice [
-    ifelse mouseLabel?
+  ask turtles [
+    ifelse energyLabel?
     [
-      set label tipo
-      set label-color black
+      set label energy
+      set label-color orange
     ]
     [ set label ""  ]
   ]
@@ -76,32 +186,32 @@ to move-mice-racional
       ifelse (is-patch? patch-left-and-ahead 45 1 AND any? cats-on patch-left-and-ahead 45 1) OR (is-patch? patch-ahead 1 AND any? cats-on patch-ahead 1) OR (is-patch? patch-right-and-ahead 45 1 AND any? cats-on patch-right-and-ahead 45 1)
       [
         ifelse is-patch? patch-ahead (-2)
-        [fd (-2)]
-        [move-to one-of neighbors with [not any? cats]]
+        [fd (-2) set energy energy - 1]
+        [move-to one-of neighbors with [not any? cats] set energy energy - 1]
       ]
       [
         ; Cat on 3 back neighbors => Move forward 2
         ifelse (is-patch? patch-left-and-ahead 135 1 AND any? cats-on patch-left-and-ahead 135 1) OR (is-patch? patch-ahead (-1) AND any? cats-on patch-ahead (-1)) OR (is-patch? patch-right-and-ahead 135 1 AND any? cats-on patch-right-and-ahead 135 1)
         [
           ifelse is-patch? patch-ahead 2
-          [fd 2]
-          [move-to one-of neighbors with [not any? cats-here]]
+          [fd 2 set energy energy - 1]
+          [move-to one-of neighbors with [not any? cats-here] set energy energy - 1]
         ]
         [
           ; Cat on left => Move to Right 2
           ifelse is-patch? patch-left-and-ahead 90 1 AND any? cats-on patch-left-and-ahead 90 1
           [
             ifelse is-patch? patch-right-and-ahead 90 2
-            [move-to patch-right-and-ahead 90 2]
-            [move-to one-of neighbors with [not any? cats-here]]
+            [move-to patch-right-and-ahead 90 2 set energy energy - 1]
+            [move-to one-of neighbors with [not any? cats-here] set energy energy - 1]
           ]
           [
             ; Cat on right => Move to Left 2
             if is-patch? patch-right-and-ahead 90 1 AND any? cats-on patch-right-and-ahead 90 1
             [
               ifelse is-patch? patch-right-and-ahead 90 2
-              [move-to patch-left-and-ahead 90 2]
-              [move-to one-of neighbors with [not any? cats-here]]
+              [move-to patch-left-and-ahead 90 2 set energy energy - 1]
+              [move-to one-of neighbors with [not any? cats-here] set energy energy - 1]
             ]
           ]
         ]
@@ -115,19 +225,30 @@ to move-mice-racional
         ifelse tipo = "loner" and [tipo] of vizinho = "loner"
         [
           move-to one-of neighbors
+          set energy energy - 1
         ]
         [
           ifelse tipo = "loner" and [tipo] of vizinho = "friendly"
           [
-            ask one-of mice-on neighbors [die]
+            let friendEnergy 0
+            ask vizinho [
+              set friendEnergy energy
+              die
+            ]
+            set energy energy + friendEnergy
           ]
           [
+            let ourEnergy energy
+            ask vizinho [
+              set energy energy + ourEnergy
+            ]
             die
           ]
         ]
       ]
       [
         move-to one-of neighbors
+        set energy energy - 1
       ]
     ]
   ]
@@ -151,14 +272,17 @@ to setup-agents-original
   [
     set shape "mouse side"
     set color 4
+    set size 1.5
     setxy random-pxcor random-pycor
-    set tipo one-of ["friendly" "loner"]
+    if Modelo = "Generalizacao do Comportamento Racional"
+    [ set tipo one-of ["friendly" "loner"] ]
   ]
 
   create-cats N-cats
   [
     set shape "cat"
     set color black
+    set size 1.2
     let x one-of patches with [not any? mice-here and not any? mice-on neighbors and not any? cats-here]
     setxy [pxcor] of x [pycor] of x
     set heading one-of [0 90 180 270]
@@ -185,6 +309,7 @@ to move-cats-original
     move-to x
     if random 100 < 25
     [set heading one-of [0 90 180 270]]
+    set energy energy - 1
   ]
 end
 
@@ -194,7 +319,7 @@ to lunch-time-original
   ]
 end
 
-;; EXPORT DATA
+;; EXPORT DATA TO TXT
 to pt [string] ; Means Print
   file-type string
 end
@@ -206,25 +331,23 @@ end
 to export-data
   let filename "dataTest.txt"
   file-open filename
-  let endtime ticks = maxTick?
   pt "Settings: " ptln Modelo
   pt "N-Mice: " pt N-Mice pt "\tN-Cats: " ptln N-Cats
   pt "Max-Ticks: " pt maxTick? pt "\tTicks: " pt ticks pt "\tExceeds: " ptln ticks = maxTick?
-  if endtime [
-    pt "Mice: " pt count mice pt "\tCats: " ptln count cats
-  ]
+  pt "Mice-end: " pt count mice pt "\tCats-end: " ptln count cats
+  pt "Loners:" pt count mice with [tipo = "loner"] pt "\tFriendly: " ptln count mice with [tipo = "friendly"]
   pt "\n"
   file-close
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
-10
-647
-448
+238
+67
+775
+605
 -1
 -1
-13.0
+16.03030303030303
 1
 14
 1
@@ -245,25 +368,25 @@ ticks
 30.0
 
 SLIDER
-23
-63
-195
-96
+32
+114
+204
+147
 N-mice
 N-mice
 0
 20
-20.0
+10.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-23
-101
-195
-134
+32
+148
+204
+181
 N-cats
 N-cats
 0
@@ -275,10 +398,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-24
-25
-90
-58
+32
+78
+114
+111
 NIL
 setup\n
 NIL
@@ -292,10 +415,10 @@ NIL
 1
 
 BUTTON
-105
-24
-168
-57
+122
+78
+204
+111
 NIL
 go
 T
@@ -309,10 +432,10 @@ NIL
 1
 
 MONITOR
-24
-145
-81
-190
+792
+162
+982
+207
 NIL
 ticks
 17
@@ -320,10 +443,10 @@ ticks
 11
 
 MONITOR
-23
-198
-108
-243
+792
+208
+887
+253
 Nº de Ratos
 count mice
 17
@@ -331,10 +454,10 @@ count mice
 11
 
 MONITOR
-23
-245
-109
-290
+887
+208
+982
+253
 Nº de Gatos
 count cats
 17
@@ -342,31 +465,31 @@ count cats
 11
 
 CHOOSER
-72
-588
-277
-633
+32
+216
+204
+261
 Modelo
 Modelo
-"Original" "Comportamento Racional"
-1
+"Original" "Comportamento Racional" "Generalizacao do Comportamento Racional"
+2
 
 SWITCH
-338
-585
-492
-618
-mouseLabel?
-mouseLabel?
+61
+520
+187
+553
+energyLabel?
+energyLabel?
 0
 1
 -1000
 
 SLIDER
-113
-490
-285
-523
+32
+182
+204
+215
 maxTick?
 maxTick?
 0
@@ -376,6 +499,183 @@ maxTick?
 1
 NIL
 HORIZONTAL
+
+SLIDER
+35
+485
+207
+518
+maxFood?
+maxFood?
+0
+200
+100.0
+2
+1
+NIL
+HORIZONTAL
+
+SWITCH
+60
+554
+189
+587
+poisonedFood?
+poisonedFood?
+0
+1
+-1000
+
+MONITOR
+792
+300
+855
+345
+Milk
+count patches with [pcolor = white]
+17
+1
+11
+
+MONITOR
+918
+300
+982
+345
+Cheese
+count patches with [pcolor = yellow]
+17
+1
+11
+
+MONITOR
+855
+300
+918
+345
+Poisoned
+count patches with [pcolor = green]
+17
+1
+11
+
+SLIDER
+35
+449
+207
+482
+startEnergy?
+startEnergy?
+0
+100
+50.0
+50
+1
+NIL
+HORIZONTAL
+
+MONITOR
+887
+254
+982
+299
+Loner
+count mice with [tipo = \"loner\"]
+17
+1
+11
+
+MONITOR
+792
+254
+887
+299
+Friendly
+count mice with [tipo = \"friendly\"]
+17
+1
+11
+
+SWITCH
+50
+342
+176
+375
+smartCats?
+smartCats?
+0
+1
+-1000
+
+SWITCH
+50
+306
+176
+339
+smartMice?
+smartMice?
+0
+1
+-1000
+
+TEXTBOX
+381
+14
+623
+56
+Cats-And-Mice
+32
+0.0
+1
+
+TEXTBOX
+30
+266
+236
+317
+Comportamento Racional\nSettings:
+14
+0.0
+1
+
+TEXTBOX
+31
+390
+211
+458
+Generalizacao do Comportamento Racional\nSettings:
+14
+0.0
+1
+
+TEXTBOX
+796
+135
+893
+179
+Variáveis:
+18
+0.0
+1
+
+PLOT
+792
+346
+983
+492
+Ratos / Gatos
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"Ratos" 1.0 0 -4539718 true "" "plot count mice"
+"Gatos" 1.0 0 -13840069 true "" "plot count cats"
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -763,6 +1063,160 @@ NetLogo 6.1.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="SmartMice" repetitions="500" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <metric>count mice</metric>
+    <metric>count cats</metric>
+    <metric>ticks</metric>
+    <enumeratedValueSet variable="smartMice?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxTick?">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-cats">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartCats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Modelo">
+      <value value="&quot;Comportamento Racional&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="startEnergy?">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="poisonedFood?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-mice">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energyLabel?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxFood?">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Original" repetitions="500" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <metric>count mice</metric>
+    <metric>count cats</metric>
+    <metric>ticks</metric>
+    <enumeratedValueSet variable="smartMice?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxTick?">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-cats">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartCats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Modelo">
+      <value value="&quot;Original&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="startEnergy?">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="poisonedFood?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-mice">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energyLabel?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxFood?">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="SmartCats" repetitions="500" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <metric>count mice</metric>
+    <metric>count cats</metric>
+    <metric>ticks</metric>
+    <enumeratedValueSet variable="smartMice?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxTick?">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-cats">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartCats?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Modelo">
+      <value value="&quot;Comportamento Racional&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="startEnergy?">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="poisonedFood?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-mice">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energyLabel?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxFood?">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="RationalBehavior" repetitions="500" sequentialRunOrder="false" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <metric>count mice</metric>
+    <metric>count cats</metric>
+    <metric>ticks</metric>
+    <enumeratedValueSet variable="smartMice?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxTick?">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-cats">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartCats?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Modelo">
+      <value value="&quot;Comportamento Racional&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="startEnergy?">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="poisonedFood?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-mice">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energyLabel?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxFood?">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default
