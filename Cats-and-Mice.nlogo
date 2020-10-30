@@ -1,7 +1,7 @@
 breed[cats cat]
 breed[mice mouse]
 globals [a b c d w z]
-mice-own [tipo]
+mice-own [tipo poisoned tempo]
 turtles-own [energy]
 
 to setup
@@ -19,9 +19,10 @@ to setup
       setup-patches-original
       setup-agents-original
       set-color-mice
-      setup-food
+      if food? [ setup-food ] ;;;;;;;;;
       setup-energy
       set-label
+      if traps? [ setup-traps ]
     ]
   )
   reset-ticks
@@ -51,17 +52,56 @@ to go
       move-mice-racional
       lunch-time-advanced
       set-label
-      energy-check
+      if energia? [energy-check] ;;;;;;;;;
+      poisoned-check
+      trap-check
     ]
   )
   tick
-  if count mice = 0 [
+  if count mice = 0 or count cats = 0[
     export-data
     stop
   ]
 end
 
 ;; ADVANCED RACIONAL BEHAVIOR
+to trap-check
+  ask mice [
+    if [pcolor] of patch-here = red [
+      color-default
+      die
+    ]
+  ]
+
+  ask cats [
+    if [pcolor] of patch-here = red [
+      set energy energy - 15
+    ]
+  ]
+end
+
+to setup-traps
+  ask patches with [not any? turtles-here and pcolor != yellow and pcolor != green and pcolor != white] [
+    if random 101 < 2 [ ; 2 % traps
+      set pcolor red
+    ]
+  ]
+end
+
+to poisoned-check
+  ask mice [
+    if poisoned = true [
+      if tempo = 15 [ ; Poisoned ticks
+        set poisoned false
+        set-color-mice
+      ]
+      if tempo < 15 [
+        set tempo tempo + 1
+      ]
+    ]
+  ]
+end
+
 to set-color-mice
   ask mice [
     ifelse tipo = "loner" [
@@ -102,13 +142,25 @@ to lunch-time-advanced
     (ifelse
       any? mice-on neighbors[
         let miceEnergy 0
-        ask one-of mice-on neighbors [ set miceEnergy energy die]
+        ask one-of mice-on neighbors [
+          if poisoned = false [
+            set miceEnergy energy
+            die
+          ]
+        ]
         set energy energy + round(miceEnergy / 2)
       ]
       any? mice-on patch-ahead 2 [
         fd 1
         let miceEnergy 0
-        ask one-of mice-on patch-ahead 1 [ set miceEnergy energy die]
+        ask one-of mice-on patch-ahead 1 [
+          if come? [
+            if poisoned = false [
+              set miceEnergy energy
+              die
+            ]
+          ]
+        ]
         set energy energy + round(miceEnergy / 2)
       ]
       any? neighbors with [pcolor = white] [
@@ -134,6 +186,9 @@ to lunch-time-advanced
         move-to one-of neighbors with [pcolor = green]
         set energy energy - 25
         color-default ; Return to default color
+        set poisoned true
+        set tempo 1
+        set color green
     ])
   ]
 end
@@ -238,11 +293,25 @@ to move-mice-racional
             set energy energy + friendEnergy
           ]
           [
-            let ourEnergy energy
-            ask vizinho [
-              set energy energy + ourEnergy
+            ifelse tipo = "friendly" and [tipo] of vizinho = "friendly" and breed? = true [
+              hatch 4 [
+                setxy random-pxcor random-pycor
+                set tipo one-of ["friendly" "loner"]
+                set poisoned false
+                set tempo 0
+                ;set child true
+                ;set child-time 0
+                ;set size 1
+                set energy 25
+              ]
             ]
-            die
+            [
+              let ourEnergy energy
+              ask vizinho [
+                set energy energy + ourEnergy
+              ]
+              die
+            ]
           ]
         ]
       ]
@@ -275,7 +344,7 @@ to setup-agents-original
     set size 1.5
     setxy random-pxcor random-pycor
     if Modelo = "Generalizacao do Comportamento Racional"
-    [ set tipo one-of ["friendly" "loner"] ]
+    [ if especies? [set tipo one-of ["friendly" "loner"]] set poisoned false set tempo 0] ;;;;;
   ]
 
   create-cats N-cats
@@ -368,10 +437,10 @@ ticks
 30.0
 
 SLIDER
-32
-114
-204
-147
+33
+102
+205
+135
 N-mice
 N-mice
 0
@@ -383,10 +452,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-32
-148
-204
-181
+33
+136
+205
+169
 N-cats
 N-cats
 0
@@ -398,10 +467,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-32
-78
-114
-111
+33
+66
+115
+99
 NIL
 setup\n
 NIL
@@ -415,10 +484,10 @@ NIL
 1
 
 BUTTON
-122
-78
-204
-111
+123
+66
+205
+99
 NIL
 go
 T
@@ -465,31 +534,31 @@ count cats
 11
 
 CHOOSER
-32
-216
+33
 204
-261
+205
+249
 Modelo
 Modelo
 "Original" "Comportamento Racional" "Generalizacao do Comportamento Racional"
 2
 
 SWITCH
-61
-520
-187
-553
+11
+505
+140
+538
 energyLabel?
 energyLabel?
-0
+1
 1
 -1000
 
 SLIDER
-32
-182
-204
-215
+33
+170
+205
+203
 maxTick?
 maxTick?
 0
@@ -501,10 +570,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-35
-485
-207
-518
+36
+471
+208
+504
 maxFood?
 maxFood?
 0
@@ -516,10 +585,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-60
-554
-189
-587
+11
+539
+140
+572
 poisonedFood?
 poisonedFood?
 0
@@ -560,10 +629,10 @@ count patches with [pcolor = green]
 11
 
 SLIDER
-35
-449
-207
-482
+36
+437
+208
+470
 startEnergy?
 startEnergy?
 0
@@ -597,24 +666,24 @@ count mice with [tipo = \"friendly\"]
 11
 
 SWITCH
-50
-342
-176
-375
+51
+330
+177
+363
 smartCats?
 smartCats?
-0
+1
 1
 -1000
 
 SWITCH
-50
-306
-176
-339
+51
+294
+177
+327
 smartMice?
 smartMice?
-0
+1
 1
 -1000
 
@@ -629,20 +698,20 @@ Cats-And-Mice
 1
 
 TEXTBOX
-30
-266
-236
-317
+31
+254
+237
+305
 Comportamento Racional\nSettings:
 14
 0.0
 1
 
 TEXTBOX
-31
-390
-211
-458
+32
+378
+212
+446
 Generalizacao do Comportamento Racional\nSettings:
 14
 0.0
@@ -676,6 +745,72 @@ false
 PENS
 "Ratos" 1.0 0 -4539718 true "" "plot count mice"
 "Gatos" 1.0 0 -13840069 true "" "plot count cats"
+
+SWITCH
+141
+505
+235
+538
+traps?
+traps?
+0
+1
+-1000
+
+SWITCH
+141
+539
+235
+572
+breed?
+breed?
+0
+1
+-1000
+
+SWITCH
+66
+581
+182
+614
+food?
+food?
+0
+1
+-1000
+
+SWITCH
+66
+615
+182
+648
+especies?
+especies?
+0
+1
+-1000
+
+SWITCH
+66
+649
+182
+682
+energia?
+energia?
+0
+1
+-1000
+
+SWITCH
+66
+683
+182
+716
+come?
+come?
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1211,6 +1346,494 @@ NetLogo 6.1.1
     </enumeratedValueSet>
     <enumeratedValueSet variable="energyLabel?">
       <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxFood?">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="PoisonedFood" repetitions="500" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <metric>count mice</metric>
+    <metric>count cats</metric>
+    <metric>ticks</metric>
+    <metric>count mice with [tipo = "friendly"]</metric>
+    <metric>count mice with [tipo = "loner"]</metric>
+    <metric>count patches with [pcolor = white]</metric>
+    <metric>count patches with [pcolor = green]</metric>
+    <metric>count patches with [pcolor = yellow]</metric>
+    <enumeratedValueSet variable="breed?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxTick?">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-cats">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartCats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="especies?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Modelo">
+      <value value="&quot;Generalizacao do Comportamento Racional&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-mice">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energyLabel?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartMice?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energia?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="traps?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="come?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="startEnergy?">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="poisonedFood?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="food?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxFood?">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Energia" repetitions="500" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <metric>count mice</metric>
+    <metric>count cats</metric>
+    <metric>ticks</metric>
+    <metric>count mice with [tipo = "friendly"]</metric>
+    <metric>count mice with [tipo = "loner"]</metric>
+    <metric>count patches with [pcolor = white]</metric>
+    <metric>count patches with [pcolor = green]</metric>
+    <metric>count patches with [pcolor = yellow]</metric>
+    <enumeratedValueSet variable="breed?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxTick?">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-cats">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartCats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="especies?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Modelo">
+      <value value="&quot;Generalizacao do Comportamento Racional&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-mice">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energyLabel?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartMice?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energia?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="traps?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="come?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="startEnergy?">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="poisonedFood?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="food?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxFood?">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Traps" repetitions="500" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <metric>count mice</metric>
+    <metric>count cats</metric>
+    <metric>ticks</metric>
+    <metric>count mice with [tipo = "friendly"]</metric>
+    <metric>count mice with [tipo = "loner"]</metric>
+    <metric>count patches with [pcolor = white]</metric>
+    <metric>count patches with [pcolor = green]</metric>
+    <metric>count patches with [pcolor = yellow]</metric>
+    <enumeratedValueSet variable="breed?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxTick?">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-cats">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartCats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="especies?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Modelo">
+      <value value="&quot;Generalizacao do Comportamento Racional&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-mice">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energyLabel?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartMice?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energia?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="traps?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="come?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="startEnergy?">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="poisonedFood?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="food?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxFood?">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="EspeciesRatos" repetitions="500" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <metric>count mice</metric>
+    <metric>count cats</metric>
+    <metric>ticks</metric>
+    <metric>count mice with [tipo = "friendly"]</metric>
+    <metric>count mice with [tipo = "loner"]</metric>
+    <metric>count patches with [pcolor = white]</metric>
+    <metric>count patches with [pcolor = green]</metric>
+    <metric>count patches with [pcolor = yellow]</metric>
+    <enumeratedValueSet variable="breed?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxTick?">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-cats">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartCats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="especies?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Modelo">
+      <value value="&quot;Generalizacao do Comportamento Racional&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-mice">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energyLabel?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartMice?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energia?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="traps?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="come?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="startEnergy?">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="poisonedFood?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="food?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxFood?">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Reproducao" repetitions="500" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <metric>count mice</metric>
+    <metric>count cats</metric>
+    <metric>ticks</metric>
+    <metric>count mice with [tipo = "friendly"]</metric>
+    <metric>count mice with [tipo = "loner"]</metric>
+    <metric>count patches with [pcolor = white]</metric>
+    <metric>count patches with [pcolor = green]</metric>
+    <metric>count patches with [pcolor = yellow]</metric>
+    <enumeratedValueSet variable="breed?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxTick?">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-cats">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartCats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="especies?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Modelo">
+      <value value="&quot;Generalizacao do Comportamento Racional&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-mice">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energyLabel?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartMice?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energia?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="traps?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="come?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="startEnergy?">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="poisonedFood?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="food?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxFood?">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="canibalismo" repetitions="500" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <metric>count mice</metric>
+    <metric>count cats</metric>
+    <metric>ticks</metric>
+    <metric>count mice with [tipo = "friendly"]</metric>
+    <metric>count mice with [tipo = "loner"]</metric>
+    <metric>count patches with [pcolor = white]</metric>
+    <metric>count patches with [pcolor = green]</metric>
+    <metric>count patches with [pcolor = yellow]</metric>
+    <enumeratedValueSet variable="breed?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxTick?">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-cats">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartCats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="especies?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Modelo">
+      <value value="&quot;Generalizacao do Comportamento Racional&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-mice">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energyLabel?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartMice?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energia?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="traps?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="come?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="startEnergy?">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="poisonedFood?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="food?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxFood?">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Alimentos" repetitions="500" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <metric>count mice</metric>
+    <metric>count cats</metric>
+    <metric>ticks</metric>
+    <metric>count mice with [tipo = "friendly"]</metric>
+    <metric>count mice with [tipo = "loner"]</metric>
+    <metric>count patches with [pcolor = white]</metric>
+    <metric>count patches with [pcolor = green]</metric>
+    <metric>count patches with [pcolor = yellow]</metric>
+    <enumeratedValueSet variable="breed?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxTick?">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-cats">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartCats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="especies?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Modelo">
+      <value value="&quot;Generalizacao do Comportamento Racional&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-mice">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energyLabel?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartMice?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energia?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="traps?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="come?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="startEnergy?">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="poisonedFood?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="food?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxFood?">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="TUDO" repetitions="500" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <metric>count mice</metric>
+    <metric>count cats</metric>
+    <metric>ticks</metric>
+    <metric>count mice with [tipo = "friendly"]</metric>
+    <metric>count mice with [tipo = "loner"]</metric>
+    <metric>count patches with [pcolor = white]</metric>
+    <metric>count patches with [pcolor = green]</metric>
+    <metric>count patches with [pcolor = yellow]</metric>
+    <enumeratedValueSet variable="breed?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxTick?">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-cats">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartCats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="especies?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Modelo">
+      <value value="&quot;Generalizacao do Comportamento Racional&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-mice">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energyLabel?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartMice?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energia?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="traps?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="come?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="startEnergy?">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="poisonedFood?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="food?">
+      <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="maxFood?">
       <value value="100"/>

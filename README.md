@@ -14,16 +14,16 @@ To download Netlogo use the following [link](https://ccl.northwestern.edu/netlog
 #### Mice
 - [x] If perceive a cat in 8 neighbors => Run away 2 patches
 - [x] If a lonely mouse perceive other lonely => Do nothing!
-- [ ] If a lonely mouse perceive a litter/friendly => ATACK!
-- [ ] If a friendly mouse perceive a litter => Join them!
+- [x] If a lonely mouse perceive a litter/friendly => ATACK!
+- [x] If a friendly mouse perceive a litter => Join them!
 
 #### Cats
 - [x] If a mouse is 2 patches in front of them, he could run to them => kill any mice
 
 ### Generalization of the model
-- [ ] Poisoned Food
-- [ ] Reproduction
+- [x] Poisoned Food
+- [x] Reproduction
     - Start small and grow up
-- [ ] Friendly and Lonely mice
+- [x] Friendly and Lonely mice
     - Create a litter if 15 or more mice are in the same 8 neighborhood
-- [ ] Poison cat when he eat a poisoned mouse
+- [x] Poison cat when he eat a poisoned mouse
