@@ -8,22 +8,3 @@ This project was developed within the scope of the course IIntrodução à Intel
 ## Usage
 In order to run this project you must use Netlogo 6.1.1<br>
 To download Netlogo use the following [link](https://ccl.northwestern.edu/netlogo/)
-
-## TODO
-### Racional Behavior
-#### Mice
-- [x] If perceive a cat in 8 neighbors => Run away 2 patches
-- [x] If a lonely mouse perceive other lonely => Do nothing!
-- [x] If a lonely mouse perceive a litter/friendly => ATACK!
-- [x] If a friendly mouse perceive a litter => Join them!
-
-#### Cats
-- [x] If a mouse is 2 patches in front of them, he could run to them => kill any mice
-
-### Generalization of the model
-- [x] Poisoned Food
-- [x] Reproduction
-    - Start small and grow up
-- [x] Friendly and Lonely mice
-    - Create a litter if 15 or more mice are in the same 8 neighborhood
-- [x] Poison cat when he eat a poisoned mouse
