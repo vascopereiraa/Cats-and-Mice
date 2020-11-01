@@ -19,7 +19,7 @@ to setup
       setup-patches-original
       setup-agents-original
       set-color-mice
-      if food? [ setup-food ] ;;;;;;;;;
+      setup-food
       setup-energy
       set-label
       if traps? [ setup-traps ]
@@ -52,7 +52,7 @@ to go
       move-mice-racional
       lunch-time-advanced
       set-label
-      if energia? [energy-check] ;;;;;;;;;
+      energy-check
       poisoned-check
       trap-check
     ]
@@ -154,11 +154,9 @@ to lunch-time-advanced
         fd 1
         let miceEnergy 0
         ask one-of mice-on patch-ahead 1 [
-          if come? [
-            if poisoned = false [
-              set miceEnergy energy
-              die
-            ]
+          if poisoned = false [
+            set miceEnergy energy
+            die
           ]
         ]
         set energy energy + round(miceEnergy / 2)
@@ -344,7 +342,7 @@ to setup-agents-original
     set size 1.5
     setxy random-pxcor random-pycor
     if Modelo = "Generalizacao do Comportamento Racional"
-    [ if especies? [set tipo one-of ["friendly" "loner"]] set poisoned false set tempo 0] ;;;;;
+    [ set tipo one-of ["friendly" "loner"] set poisoned false set tempo 0 ]
   ]
 
   create-cats N-cats
@@ -550,7 +548,7 @@ SWITCH
 538
 energyLabel?
 energyLabel?
-1
+0
 1
 -1000
 
@@ -764,50 +762,6 @@ SWITCH
 572
 breed?
 breed?
-0
-1
--1000
-
-SWITCH
-66
-581
-182
-614
-food?
-food?
-0
-1
--1000
-
-SWITCH
-66
-615
-182
-648
-especies?
-especies?
-0
-1
--1000
-
-SWITCH
-66
-649
-182
-682
-energia?
-energia?
-0
-1
--1000
-
-SWITCH
-66
-683
-182
-716
-come?
-come?
 0
 1
 -1000
@@ -1834,6 +1788,67 @@ NetLogo 6.1.1
     </enumeratedValueSet>
     <enumeratedValueSet variable="food?">
       <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxFood?">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Come" repetitions="500" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <metric>count mice</metric>
+    <metric>count cats</metric>
+    <metric>ticks</metric>
+    <metric>count mice with [tipo = "friendly"]</metric>
+    <metric>count mice with [tipo = "loner"]</metric>
+    <metric>count patches with [pcolor = white]</metric>
+    <metric>count patches with [pcolor = green]</metric>
+    <metric>count patches with [pcolor = yellow]</metric>
+    <enumeratedValueSet variable="breed?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxTick?">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-cats">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartCats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="especies?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Modelo">
+      <value value="&quot;Generalizacao do Comportamento Racional&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="N-mice">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energyLabel?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="smartMice?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="energia?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="traps?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="come?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="startEnergy?">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="poisonedFood?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="food?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="maxFood?">
       <value value="100"/>
